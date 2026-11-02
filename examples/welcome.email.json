@@ -1,0 +1,996 @@
+{
+  "schemaVersion": 1,
+  "metadata": {
+    "name": "Boas-vindas · Aurora",
+    "subject": "Que bom ter você por aqui ✨",
+    "preheader": "O próximo capítulo da sua jornada começa agora."
+  },
+  "design": {
+    "dataSources": [],
+    "assets": [],
+    "styles": [
+      {
+        "selectors": [],
+        "selectorsAdd": "#outlook a",
+        "style": {
+          "padding-top": "0px",
+          "padding-right": "0px",
+          "padding-bottom": "0px",
+          "padding-left": "0px"
+        }
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": "body",
+        "style": {
+          "margin-top": "0px",
+          "margin-right": "0px",
+          "margin-bottom": "0px",
+          "margin-left": "0px",
+          "padding-top": "0px",
+          "padding-right": "0px",
+          "padding-bottom": "0px",
+          "padding-left": "0px",
+          "text-size-adjust": "100%"
+        }
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": "table, td",
+        "style": {
+          "border-collapse": "collapse"
+        }
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": "img",
+        "style": {
+          "border-top-width": "0px",
+          "border-right-width": "0px",
+          "border-bottom-width": "0px",
+          "border-left-width": "0px",
+          "border-top-style": "none",
+          "border-right-style": "none",
+          "border-bottom-style": "none",
+          "border-left-style": "none",
+          "border-top-color": "currentcolor",
+          "border-right-color": "currentcolor",
+          "border-bottom-color": "currentcolor",
+          "border-left-color": "currentcolor",
+          "border-image-source": "none",
+          "border-image-slice": "100%",
+          "border-image-width": "1",
+          "border-image-outset": "0",
+          "border-image-repeat": "stretch",
+          "height": "auto",
+          "line-height": "100%",
+          "outline-color": "initial",
+          "outline-style": "none",
+          "outline-width": "initial",
+          "text-decoration-line": "none",
+          "text-decoration-thickness": "initial",
+          "text-decoration-style": "initial",
+          "text-decoration-color": "initial"
+        }
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": "p",
+        "style": {
+          "display": "block",
+          "margin-top": "13px",
+          "margin-right": "0px",
+          "margin-bottom": "13px",
+          "margin-left": "0px"
+        }
+      },
+      {
+        "selectors": [
+          "mj-column-per-100"
+        ],
+        "style": {
+          "width": "100% !important",
+          "max-width": "100%"
+        },
+        "mediaText": "only screen and (min-width: 480px)",
+        "atRuleType": "media"
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": ".moz-text-html .mj-column-per-100",
+        "style": {
+          "width": "100% !important",
+          "max-width": "100%"
+        }
+      },
+      {
+        "selectors": [
+          "mj-column-per-50"
+        ],
+        "style": {
+          "width": "50% !important",
+          "max-width": "50%"
+        },
+        "mediaText": "only screen and (min-width: 480px)",
+        "atRuleType": "media"
+      },
+      {
+        "selectors": [],
+        "selectorsAdd": ".moz-text-html .mj-column-per-50",
+        "style": {
+          "width": "50% !important",
+          "max-width": "50%"
+        }
+      }
+    ],
+    "pages": [
+      {
+        "frames": [
+          {
+            "component": {
+              "type": "wrapper",
+              "stylable": [
+                "background",
+                "background-color",
+                "background-image",
+                "background-repeat",
+                "background-attachment",
+                "background-position",
+                "background-size"
+              ],
+              "components": [
+                {
+                  "tagName": "mjml",
+                  "type": "mjml",
+                  "components": [
+                    {
+                      "tagName": "mj-head",
+                      "type": "mj-head",
+                      "components": [
+                        {
+                          "tagName": "mj-attributes",
+                          "components": [
+                            {
+                              "tagName": "mj-all",
+                              "attributes": {
+                                "font-family": "Arial, Helvetica, sans-serif"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "padding-top": "10px",
+                                    "padding-bottom": "10px",
+                                    "padding-right": "25px",
+                                    "padding-left": "25px",
+                                    "font-size": "13px",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "padding-top": "10px",
+                                    "padding-bottom": "10px",
+                                    "padding-right": "25px",
+                                    "padding-left": "25px",
+                                    "font-size": "13px",
+                                    "align": "left",
+                                    "style": "line-height:1.6;font-family:Arial, Helvetica, sans-serif;padding-top:10px;padding-bottom:10px;padding-right:25px;padding-left:25px;font-size:13px;align:left;"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "tagName": "mj-body",
+                      "type": "mj-body",
+                      "style": {
+                        "width": "600px",
+                        "background-color": "#f0eef5"
+                      },
+                      "attributes": {
+                        "width": "600px",
+                        "background-color": "#f0eef5",
+                        "style": "width:600px;background-color:#f0eef5;"
+                      },
+                      "components": [
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "30px",
+                            "padding-right": "0",
+                            "padding-bottom": "22px",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "30px",
+                            "padding-right": "0",
+                            "padding-bottom": "22px",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center",
+                            "style": "padding-top:30px;padding-right:0;padding-bottom:22px;padding-left:0;background-color:#ffffff;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "vertical-align": "top",
+                                "style": "vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "align": "center",
+                                    "font-size": "25px",
+                                    "letter-spacing": "-1px",
+                                    "font-weight": "700",
+                                    "color": "#2e2943",
+                                    "padding-top": "0",
+                                    "padding-right": "0",
+                                    "padding-bottom": "0",
+                                    "padding-left": "0",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif"
+                                  },
+                                  "attributes": {
+                                    "align": "center",
+                                    "font-size": "25px",
+                                    "letter-spacing": "-1px",
+                                    "font-weight": "700",
+                                    "color": "#2e2943",
+                                    "padding-top": "0",
+                                    "padding-right": "0",
+                                    "padding-bottom": "0",
+                                    "padding-left": "0",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "style": "align:center;font-size:25px;letter-spacing:-1px;font-weight:700;color:#2e2943;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;line-height:1.6;font-family:Arial, Helvetica, sans-serif;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "aurora"
+                                    },
+                                    {
+                                      "tagName": "span",
+                                      "type": "text",
+                                      "layerable": false,
+                                      "style": {
+                                        "color": "#8370e3"
+                                      },
+                                      "attributes": {
+                                        "style": "color:#8370e3;"
+                                      },
+                                      "components": [
+                                        {
+                                          "type": "textnode",
+                                          "content": "."
+                                        }
+                                      ],
+                                      "locked": true
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "30px",
+                            "padding-right": "24px",
+                            "padding-bottom": "32px",
+                            "padding-left": "24px",
+                            "background-color": "#eeebfa",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "30px",
+                            "padding-right": "24px",
+                            "padding-bottom": "32px",
+                            "padding-left": "24px",
+                            "background-color": "#eeebfa",
+                            "text-align": "center",
+                            "style": "padding-top:30px;padding-right:24px;padding-bottom:32px;padding-left:24px;background-color:#eeebfa;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "vertical-align": "top",
+                                "style": "vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "align": "center",
+                                    "color": "#7867bc",
+                                    "font-size": "10px",
+                                    "letter-spacing": "3px",
+                                    "font-weight": "700",
+                                    "padding-top": "4px",
+                                    "padding-right": "0",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "0",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif"
+                                  },
+                                  "attributes": {
+                                    "align": "center",
+                                    "color": "#7867bc",
+                                    "font-size": "10px",
+                                    "letter-spacing": "3px",
+                                    "font-weight": "700",
+                                    "padding-top": "4px",
+                                    "padding-right": "0",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "0",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "style": "align:center;color:#7867bc;font-size:10px;letter-spacing:3px;font-weight:700;padding-top:4px;padding-right:0;padding-bottom:16px;padding-left:0;line-height:1.6;font-family:Arial, Helvetica, sans-serif;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "UM NOVO COMEÇO"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "align": "center",
+                                    "color": "#302947",
+                                    "font-size": "38px",
+                                    "line-height": "1.15",
+                                    "font-weight": "700",
+                                    "letter-spacing": "-1.5px",
+                                    "padding-top": "0",
+                                    "padding-right": "14px",
+                                    "padding-bottom": "14px",
+                                    "padding-left": "14px",
+                                    "font-family": "Arial, Helvetica, sans-serif"
+                                  },
+                                  "attributes": {
+                                    "align": "center",
+                                    "color": "#302947",
+                                    "font-size": "38px",
+                                    "line-height": "1.15",
+                                    "font-weight": "700",
+                                    "letter-spacing": "-1.5px",
+                                    "padding-top": "0",
+                                    "padding-right": "14px",
+                                    "padding-bottom": "14px",
+                                    "padding-left": "14px",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "style": "align:center;color:#302947;font-size:38px;line-height:1.15;font-weight:700;letter-spacing:-1.5px;padding-top:0;padding-right:14px;padding-bottom:14px;padding-left:14px;font-family:Arial, Helvetica, sans-serif;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Boas ideias merecem"
+                                    },
+                                    {
+                                      "tagName": "br",
+                                      "layerable": false,
+                                      "void": true,
+                                      "locked": true
+                                    },
+                                    {
+                                      "type": "textnode",
+                                      "content": "chegar mais longe."
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "align": "center",
+                                    "font-size": "15px",
+                                    "color": "#777088",
+                                    "line-height": "1.7",
+                                    "padding-top": "0",
+                                    "padding-right": "30px",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "30px",
+                                    "font-family": "Arial, Helvetica, sans-serif"
+                                  },
+                                  "attributes": {
+                                    "align": "center",
+                                    "font-size": "15px",
+                                    "color": "#777088",
+                                    "line-height": "1.7",
+                                    "padding-top": "0",
+                                    "padding-right": "30px",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "30px",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "style": "align:center;font-size:15px;color:#777088;line-height:1.7;padding-top:0;padding-right:30px;padding-bottom:16px;padding-left:30px;font-family:Arial, Helvetica, sans-serif;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Olá, [FNAME]. Que bom ter você por aqui."
+                                    },
+                                    {
+                                      "tagName": "br",
+                                      "layerable": false,
+                                      "void": true,
+                                      "locked": true
+                                    },
+                                    {
+                                      "type": "textnode",
+                                      "content": "O próximo capítulo da sua jornada começa agora."
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-button",
+                                  "type": "mj-button",
+                                  "style": {
+                                    "href": "https://example.com",
+                                    "background-color": "#7060cf",
+                                    "border-radius": "7px",
+                                    "font-size": "13px",
+                                    "font-weight": "700",
+                                    "inner-padding": "15px 26px",
+                                    "padding-top": "4px",
+                                    "padding-right": "0",
+                                    "padding-bottom": "4px",
+                                    "padding-left": "0",
+                                    "color": "#ffffff",
+                                    "vertical-align": "middle",
+                                    "align": "center"
+                                  },
+                                  "attributes": {
+                                    "href": "https://example.com",
+                                    "background-color": "#7060cf",
+                                    "border-radius": "7px",
+                                    "font-size": "13px",
+                                    "font-weight": "700",
+                                    "inner-padding": "15px 26px",
+                                    "padding-top": "4px",
+                                    "padding-right": "0",
+                                    "padding-bottom": "4px",
+                                    "padding-left": "0",
+                                    "color": "#ffffff",
+                                    "vertical-align": "middle",
+                                    "align": "center",
+                                    "style": "href:https://example.com;background-color:#7060cf;border-radius:7px;font-size:13px;font-weight:700;inner-padding:15px 26px;padding-top:4px;padding-right:0;padding-bottom:4px;padding-left:0;color:#ffffff;vertical-align:middle;align:center;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Explore as novidades   →"
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "0",
+                            "padding-right": "0",
+                            "padding-bottom": "0",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "0",
+                            "padding-right": "0",
+                            "padding-bottom": "0",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center",
+                            "style": "padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;background-color:#ffffff;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "vertical-align": "top",
+                                "style": "vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-image",
+                                  "type": "mj-image",
+                                  "style": {
+                                    "src": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85",
+                                    "alt": "Pico de montanha cercado por nuvens",
+                                    "padding-top": "0",
+                                    "padding-right": "0",
+                                    "padding-bottom": "0",
+                                    "padding-left": "0",
+                                    "align": "center"
+                                  },
+                                  "attributes": {
+                                    "src": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85",
+                                    "alt": "Pico de montanha cercado por nuvens",
+                                    "padding-top": "0",
+                                    "padding-right": "0",
+                                    "padding-bottom": "0",
+                                    "padding-left": "0",
+                                    "align": "center",
+                                    "style": "src:https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=85;alt:Pico de montanha cercado por nuvens;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0;align:center;"
+                                  }
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "22px",
+                            "padding-right": "20px",
+                            "padding-bottom": "10px",
+                            "padding-left": "20px",
+                            "background-color": "#ffffff",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "22px",
+                            "padding-right": "20px",
+                            "padding-bottom": "10px",
+                            "padding-left": "20px",
+                            "background-color": "#ffffff",
+                            "text-align": "center",
+                            "style": "padding-top:22px;padding-right:20px;padding-bottom:10px;padding-left:20px;background-color:#ffffff;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "vertical-align": "top",
+                                "style": "vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "font-size": "23px",
+                                    "color": "#302947",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "font-size": "23px",
+                                    "color": "#302947",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "font-size:23px;color:#302947;font-weight:700;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;line-height:1.6;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Toda grande jornada começa com um passo."
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "color": "#777088",
+                                    "font-size": "15px",
+                                    "line-height": "1.8",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "12px",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "color": "#777088",
+                                    "font-size": "15px",
+                                    "line-height": "1.8",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "16px",
+                                    "padding-left": "12px",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "color:#777088;font-size:15px;line-height:1.8;padding-top:0;padding-right:12px;padding-bottom:16px;padding-left:12px;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Inspiração, descobertas e possibilidades. Selecionamos o que importa para acompanhar você no caminho."
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "0",
+                            "padding-right": "20px",
+                            "padding-bottom": "20px",
+                            "padding-left": "20px",
+                            "background-color": "#ffffff",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "0",
+                            "padding-right": "20px",
+                            "padding-bottom": "20px",
+                            "padding-left": "20px",
+                            "background-color": "#ffffff",
+                            "text-align": "center",
+                            "style": "padding-top:0;padding-right:20px;padding-bottom:20px;padding-left:20px;background-color:#ffffff;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "width": "50%",
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "width": "50%",
+                                "vertical-align": "top",
+                                "style": "width:50%;vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "font-size": "16px",
+                                    "color": "#51478a",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "font-size": "16px",
+                                    "color": "#51478a",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "font-size:16px;color:#51478a;font-weight:700;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;line-height:1.6;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "01. Descubra"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "color": "#777088",
+                                    "font-size": "14px",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "color": "#777088",
+                                    "font-size": "14px",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "color:#777088;font-size:14px;padding-top:0;padding-right:12px;padding-bottom:12px;padding-left:12px;line-height:1.6;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Conteúdos pensados para abrir novos horizontes."
+                                    }
+                                  ]
+                                }
+                              ]
+                            },
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "width": "50%",
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "width": "50%",
+                                "vertical-align": "top",
+                                "style": "width:50%;vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "font-size": "16px",
+                                    "color": "#51478a",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "font-size": "16px",
+                                    "color": "#51478a",
+                                    "font-weight": "700",
+                                    "padding-top": "12px",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "font-size:16px;color:#51478a;font-weight:700;padding-top:12px;padding-right:12px;padding-bottom:12px;padding-left:12px;line-height:1.6;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "02. Transforme"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "color": "#777088",
+                                    "font-size": "14px",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left"
+                                  },
+                                  "attributes": {
+                                    "color": "#777088",
+                                    "font-size": "14px",
+                                    "padding-top": "0",
+                                    "padding-right": "12px",
+                                    "padding-bottom": "12px",
+                                    "padding-left": "12px",
+                                    "line-height": "1.6",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "align": "left",
+                                    "style": "color:#777088;font-size:14px;padding-top:0;padding-right:12px;padding-bottom:12px;padding-left:12px;line-height:1.6;font-family:Arial, Helvetica, sans-serif;align:left;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Pequenas ideias que fazem a diferença no seu dia."
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "tagName": "mj-section",
+                          "type": "mj-section",
+                          "style": {
+                            "padding-top": "8px",
+                            "padding-right": "0",
+                            "padding-bottom": "8px",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center"
+                          },
+                          "attributes": {
+                            "padding-top": "8px",
+                            "padding-right": "0",
+                            "padding-bottom": "8px",
+                            "padding-left": "0",
+                            "background-color": "#ffffff",
+                            "text-align": "center",
+                            "style": "padding-top:8px;padding-right:0;padding-bottom:8px;padding-left:0;background-color:#ffffff;text-align:center;"
+                          },
+                          "components": [
+                            {
+                              "tagName": "mj-column",
+                              "type": "mj-column",
+                              "style": {
+                                "vertical-align": "top"
+                              },
+                              "attributes": {
+                                "vertical-align": "top",
+                                "style": "vertical-align:top;"
+                              },
+                              "components": [
+                                {
+                                  "tagName": "mj-text",
+                                  "type": "mj-text",
+                                  "style": {
+                                    "align": "center",
+                                    "color": "#8c899c",
+                                    "font-size": "12px",
+                                    "line-height": "1.8",
+                                    "padding-top": "20px",
+                                    "padding-right": "28px",
+                                    "padding-bottom": "20px",
+                                    "padding-left": "28px",
+                                    "font-family": "Arial, Helvetica, sans-serif"
+                                  },
+                                  "attributes": {
+                                    "align": "center",
+                                    "color": "#8c899c",
+                                    "font-size": "12px",
+                                    "line-height": "1.8",
+                                    "padding-top": "20px",
+                                    "padding-right": "28px",
+                                    "padding-bottom": "20px",
+                                    "padding-left": "28px",
+                                    "font-family": "Arial, Helvetica, sans-serif",
+                                    "style": "align:center;color:#8c899c;font-size:12px;line-height:1.8;padding-top:20px;padding-right:28px;padding-bottom:20px;padding-left:28px;font-family:Arial, Helvetica, sans-serif;"
+                                  },
+                                  "components": [
+                                    {
+                                      "type": "textnode",
+                                      "content": "Enviado com carinho por Sua Marca."
+                                    },
+                                    {
+                                      "tagName": "br",
+                                      "layerable": false,
+                                      "void": true,
+                                      "locked": true
+                                    },
+                                    {
+                                      "type": "textnode",
+                                      "content": "[COMPANY_FULL_ADDRESS]"
+                                    },
+                                    {
+                                      "tagName": "br",
+                                      "layerable": false,
+                                      "void": true,
+                                      "locked": true
+                                    },
+                                    {
+                                      "type": "link",
+                                      "layerable": false,
+                                      "style": {
+                                        "color": "#8c899c"
+                                      },
+                                      "attributes": {
+                                        "href": "[UNSUBSCRIBE_URL]",
+                                        "style": "color:#8c899c;"
+                                      },
+                                      "components": [
+                                        {
+                                          "type": "textnode",
+                                          "content": "Cancelar inscrição"
+                                        }
+                                      ],
+                                      "locked": true
+                                    },
+                                    {
+                                      "type": "textnode",
+                                      "content": " · "
+                                    },
+                                    {
+                                      "type": "link",
+                                      "layerable": false,
+                                      "style": {
+                                        "color": "#8c899c"
+                                      },
+                                      "attributes": {
+                                        "href": "[WEB_VERSION_URL]",
+                                        "style": "color:#8c899c;"
+                                      },
+                                      "components": [
+                                        {
+                                          "type": "textnode",
+                                          "content": "Ver no navegador"
+                                        }
+                                      ],
+                                      "locked": true
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "head": {
+                "type": "head"
+              },
+              "docEl": {
+                "tagName": "html"
+              }
+            },
+            "id": "ibGUC3GA4zqVs8pZ"
+          }
+        ],
+        "id": "z26BVZMPAaIVN9Xs"
+      }
+    ],
+    "symbols": []
+  },
+  "updatedAt": "2026-11-02T01:58:59.392Z"
+}

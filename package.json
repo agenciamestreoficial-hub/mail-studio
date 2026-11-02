@@ -1,0 +1,33 @@
+{
+  "name": "mail-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Editor de e-mails visual, sem marca d’água, com React, GrapesJS Core e MJML.",
+  "type": "module",
+  "license": "MIT",
+  "engines": { "node": ">=22.12" },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "dompurify": "^3.3.1",
+    "grapesjs": "0.23.8",
+    "grapesjs-mjml": "1.0.8",
+    "lucide-react": "^0.468.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "jsdom": "^27.0.0",
+    "typescript": "^5.9.3",
+    "vite": "8.3.5",
+    "vitest": "^4.0.0"
+  }
+}
