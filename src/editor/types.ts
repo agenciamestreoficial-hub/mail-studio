@@ -6,6 +6,10 @@ export type EmailProject = {
   metadata: EmailMetadata;
   design: ProjectData;
   updatedAt: string;
+  /** Absent means visual (backwards compatible with v0.1 projects). */
+  mode?: 'visual' | 'html';
+  /** Full HTML document in code mode; design retains the separate visual draft. */
+  htmlSource?: string;
 };
 export type EmailExport = {
   project: EmailProject;
@@ -20,6 +24,8 @@ export interface EmailEditorProps {
   /** In a SaaS, scope to tenant/user/document or omit to disable local persistence. */
   storageKey?: string;
   brandName?: string;
+  /** Public HTTPS route serving the included GIF service. Omit for local demo mode. */
+  countdownEndpoint?: string;
   mergeTags?: MergeTag[];
   onChange?: (project: EmailProject) => void;
   onSave?: (result: EmailExport) => Promise<void> | void;

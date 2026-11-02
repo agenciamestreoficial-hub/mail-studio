@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+import { isLocalCountdownUrl } from '../countdown/config';
 import type { EmailProject } from './types';
 
 export function safeUrl(input: string, image = false): string {
@@ -37,7 +38,7 @@ function inspectNodes(value: unknown, depth = 0): void {
     if (['href', 'src', 'background-url'].includes(key) && typeof child === 'string' && child) {
       const decoder = document.createElement('textarea');
       decoder.innerHTML = child;
-      if (decoder.value !== '#' && !safeUrl(decoder.value, key !== 'href')) throw new Error('O projeto contém uma URL não permitida.');
+      if (decoder.value !== '#' && !(key === 'src' && isLocalCountdownUrl(decoder.value)) && !safeUrl(decoder.value, key !== 'href')) throw new Error('O projeto contém uma URL não permitida.');
     }
     if (key === 'content' && typeof child === 'string') (value as Record<string, unknown>)[key] = sanitizeEmailHtml(child);
     if (child && typeof child === 'object') inspectNodes(child, depth + 1);
@@ -57,8 +58,61 @@ export function parseProject(raw: string): EmailProject {
   if (!['name', 'subject', 'preheader'].every(key => typeof data.metadata[key] === 'string' && data.metadata[key].length <= 500)) throw new Error('Os dados do e-mail são inválidos.');
   const page = data.design.pages[0];
   if (!Array.isArray(page.frames) || page.frames.length !== 1 || !page.frames[0].component) throw new Error('A estrutura do projeto é inválida.');
+  if (data.mode !== undefined && !['visual', 'html'].includes(data.mode)) throw new Error('Modo de edição inválido.');
+  if (data.mode === 'html' || data.htmlSource !== undefined) {
+    if (typeof data.htmlSource !== 'string' || data.htmlSource.length > MAX_HTML_SIZE) throw new Error('O HTML deve ter até 2 MB.');
+    data.htmlSource = data.htmlSource.trim() ? sanitizeEmailDocument(data.htmlSource) : '';
+  }
   inspectNodes(data.design);
   const serialized = JSON.stringify(page.frames[0].component);
   if (!serialized.includes('mj-body')) throw new Error('O projeto não possui uma estrutura MJML válida.');
   return data as EmailProject;
+}
+
+export const MAX_HTML_SIZE = 2_000_000;
+const forbidden = ['script', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'link', 'meta', 'base', 'video', 'audio'];
+const conditionalTags = new Set(['table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'th', 'div', 'span', 'p', 'a', 'img', 'br', 'center', 'style', 'v:rect', 'v:roundrect', 'v:fill', 'v:textbox', 'v:stroke', 'v:imagedata', 'w:anchorlock', 'w:wrap', 'o:officedocumentsettings', 'o:allowpng', 'o:pixelsperinch']);
+const conditionalAttrs = new Set(['style', 'class', 'width', 'height', 'align', 'valign', 'bgcolor', 'border', 'cellpadding', 'cellspacing', 'role', 'xmlns:v', 'xmlns:w', 'xmlns:o', 'fillcolor', 'strokecolor', 'strokeweight', 'arcsize', 'type', 'src', 'href', 'target', 'alt', 'color', 'opacity', 'aspect', 'origin', 'position', 'focus', 'size', 'inset', 'v:ext', 'coordsize', 'fill', 'stroke']);
+function cleanCss(css: string): string {
+  // Do not allow executable legacy CSS or external stylesheets. Ordinary email CSS stays intact.
+  return css.replace(/@import[^;]*(;|$)/gi, '').replace(/[^{};]*(?:expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:|vbscript\s*:)[^{};]*/gi, '');
+}
+function safeConditional(comment: string): string {
+  const condition = comment.match(/^<!--\[if ([^\]]+)\]>/i)?.[1];
+  if (condition && (!/mso|IE/i.test(condition) || !/^[\w\s!()|&.<>=-]+$/.test(condition))) return '';
+  if (/<\s*(script|iframe|object|embed|form|svg|math)\b|\son[a-z]+\s*=|javascript\s*:|vbscript\s*:|expression\s*\(|\\/i.test(comment)) return '';
+  return comment.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (_match, start, css, end) => start + cleanCss(css) + end).replace(/<(\/?)([a-z][\w:-]*)([^<>]*?)>/gi, (_tag, closing: string, tag: string, raw: string) => {
+    if (!conditionalTags.has(tag.toLowerCase())) return '';
+    if (closing) return `</${tag}>`;
+    // Parse only attributes, preserving deliberately unbalanced table/VML fragments for Outlook.
+    const doc = new DOMParser().parseFromString(`<div ${raw.replace(/\/$/, '')}></div>`, 'text/html');
+    const element = doc.body.firstElementChild;
+    const attrs = Array.from(element?.attributes || []).filter(attr => conditionalAttrs.has(attr.name.toLowerCase())).flatMap(attr => {
+      let value = attr.value;
+      if (attr.name === 'src' && !safeUrl(value, true) && !isLocalCountdownUrl(value)) return [];
+      if (attr.name === 'href' && value !== '#' && !safeUrl(value)) return [];
+      if (attr.name === 'style') value = cleanCss(value);
+      return [`${attr.name}="${escapeXml(value)}"`];
+    });
+    return `<${tag}${attrs.length ? ' ' + attrs.join(' ') : ''}${raw.endsWith('/') ? '/' : ''}>`;
+  });
+}
+/** Preserve document CSS and safe Outlook conditionals, while removing executable content. */
+export function sanitizeEmailDocument(source: string): string {
+  if (source.length > MAX_HTML_SIZE) throw new Error('O HTML deve ter até 2 MB.');
+  if (!source.trim()) throw new Error('Cole um e-mail em HTML ou escolha um arquivo .html.');
+  const markers: string[] = [];
+  const nonce = Math.random().toString(36).slice(2);
+  const prepared = source.replace(/<!--\[if [^\]]+\]><!-->|<!--<!\[endif\]-->|<!--\[if [^\]]+\]>[\s\S]*?<!\[endif\]-->/gi, comment => {
+    const index = markers.push(safeConditional(comment)) - 1;
+    return `<style>/*MSCOND_${nonce}_${index}*/</style>`;
+  });
+  let clean = DOMPurify.sanitize(prepared, { WHOLE_DOCUMENT: true, ADD_TAGS: ['style'], FORBID_TAGS: forbidden, FORBID_ATTR: ['srcdoc', 'formaction'], ALLOW_DATA_ATTR: false });
+  const document = new DOMParser().parseFromString(clean, 'text/html');
+  document.querySelectorAll('style').forEach(style => { style.textContent = cleanCss(style.textContent || ''); });
+  document.querySelectorAll('[style]').forEach(node => node.setAttribute('style', cleanCss(node.getAttribute('style') || '')));
+  clean = document.documentElement.outerHTML;
+  markers.forEach((comment, index) => { clean = clean.replace(`<style>/*MSCOND_${nonce}_${index}*/</style>`, comment); });
+  if (!new DOMParser().parseFromString(clean, 'text/html').body.innerHTML.trim()) throw new Error('O HTML precisa ter conteúdo no corpo do e-mail.');
+  return '<!doctype html>\n' + clean;
 }

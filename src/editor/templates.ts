@@ -1,3 +1,4 @@
+import { countdownBlock } from './countdown';
 export type BlockDefinition = {
   id: string;
   label: string;
@@ -17,6 +18,8 @@ export const blockDefinitions: BlockDefinition[] = [
   { id: 'text', label: 'Texto', icon: 'text', category: 'Conteúdo', content: section(text) },
   { id: 'image', label: 'Imagem', icon: 'image', category: 'Conteúdo', content: section(img) },
   { id: 'button', label: 'Botão', icon: 'button', category: 'Conteúdo', content: section(button) },
+  { id: 'countdown', label: 'Cronômetro', icon: 'timer', category: 'Conteúdo', content: countdownBlock() },
+  { id: 'coupon', label: 'Cupom', icon: 'coupon', category: 'Conteúdo', content: section('<mj-text align="center" color="#7060cf" font-size="11px" letter-spacing="2px" font-weight="700" padding="16px 28px 8px">UM BENEFÍCIO PARA VOCÊ</mj-text><mj-text align="center" color="#302947" font-size="28px" font-weight="700" letter-spacing="3px" padding="12px 28px"><span style="border:2px dashed #c9bfeb;padding:12px 24px;display:inline-block">SEU-CUPOM</span></mj-text><mj-text align="center" color="#777088" font-size="13px" padding="12px 28px">Descreva o benefício, a validade e as condições do seu cupom.</mj-text>' + button) },
   { id: 'divider', label: 'Divisor', icon: 'divider', category: 'Conteúdo', content: section('<mj-divider border-color="#e8e7ef" border-width="1px" padding="16px 28px" />') },
   { id: 'spacer', label: 'Espaçador', icon: 'spacer', category: 'Conteúdo', content: section('<mj-spacer height="32px" />') },
   { id: 'social', label: 'Redes sociais', icon: 'social', category: 'Conteúdo', content: section('<mj-text align="center" color="#7060df" padding="20px 28px"><a href="https://instagram.com" style="color:#7060df;text-decoration:none">Instagram</a> &nbsp; · &nbsp; <a href="https://linkedin.com" style="color:#7060df;text-decoration:none">LinkedIn</a> &nbsp; · &nbsp; <a href="https://example.com" style="color:#7060df;text-decoration:none">Site</a></mj-text>') },
@@ -26,6 +29,7 @@ export const blockDefinitions: BlockDefinition[] = [
   { id: 'two-images', label: '2 imagens', icon: 'images', category: 'Layouts', content: columns(img, img) },
   { id: 'card', label: 'Card completo', icon: 'card', category: 'Layouts', content: section(img + title + text + button) },
   { id: 'two-buttons', label: '2 botões', icon: 'buttons', category: 'Layouts', content: columns(button, button) },
+  { id: 'benefits', label: 'Benefícios', icon: 'benefits', category: 'Layouts', content: section('<mj-text font-size="24px" font-weight="700" color="#302947" padding="20px 28px 8px">Tudo o que espera por você.</mj-text><mj-text color="#55536b" font-size="16px" line-height="2" padding="12px 28px 20px"><strong style="color:#7060cf">✓</strong> Apresente o primeiro benefício.<br/><strong style="color:#7060cf">✓</strong> Mostre o que faz a diferença.<br/><strong style="color:#7060cf">✓</strong> Termine com uma boa razão para agir.</mj-text>') },
   { id: 'footer', label: 'Rodapé', icon: 'footer', category: 'Layouts', content: section('<mj-text align="center" color="#8c899c" font-size="12px" line-height="1.8" padding="20px 28px">Enviado com carinho por Sua Marca.<br/>[COMPANY_FULL_ADDRESS]<br/><a href="[UNSUBSCRIBE_URL]" style="color:#8c899c">Cancelar inscrição</a> · <a href="[WEB_VERSION_URL]" style="color:#8c899c">Ver no navegador</a></mj-text>') },
 ];
 export function wrapMjml(body: string, background = '#f0eef5') {

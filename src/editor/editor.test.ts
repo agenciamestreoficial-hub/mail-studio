@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from 'vitest';
 import type { Editor } from 'grapesjs';
-import { applyBlockHtml, bodyOf, createEditor, exportEmail, snapshot } from './engine';
+import { applyBlockHtml, bodyOf, createEditor, exportEmail, snapshot, insertBlock } from './engine';
 import { parseProject, safeUrl, sanitizeEmailHtml } from './security';
-import { templates } from './templates';
+import { readCountdown, updateCountdown } from './countdown';
+import { countdownColors } from '../countdown/config';
+import { blockDefinitions, templates } from './templates';
 
 const editors: Editor[] = [];
 function openEditor() {
@@ -103,5 +105,55 @@ describe('Limites para conteúdo importado', () => {
     expect(() => parseProject(JSON.stringify(snapshot(editor, meta)))).toThrow(/URL/);
     bodyOf(editor)!.findType('mj-button')[0].addAttributes({ href: 'https://example.com', color: '#fff" invalid="x' });
     expect(() => parseProject(JSON.stringify(snapshot(editor, meta)))).toThrow(/atributo/);
+  });
+});
+
+
+describe('Biblioteca completa e cronômetro', () => {
+  it.each(blockDefinitions)('insere e compila o bloco $label', block => {
+    const editor = openEditor();
+    const before = bodyOf(editor)!.components().length;
+    insertBlock(editor, block.id);
+    expect(bodyOf(editor)!.components().length).toBe(before + 1);
+    const result = exportEmail(editor, meta);
+    expect(result.warnings.filter(w => !/Substitua|Inclua|Cronômetro em modo local/.test(w))).toEqual([]);
+    expect(() => parseProject(JSON.stringify(result.project))).not.toThrow();
+  });
+  it('salva/restaura prazo, fuso e cores sem JavaScript no e-mail', () => {
+    const editor = openEditor(); insertBlock(editor, 'countdown');
+    const timer = bodyOf(editor)!.components().last();
+    const config = { end: '2090-11-10T21:30:00.000Z', zone: 'America/Sao_Paulo', ...countdownColors, accent: '#ffe099' };
+    updateCountdown(timer, config, 'https://assets.example.com/api/countdown.gif');
+    const project = parseProject(JSON.stringify(snapshot(editor, meta)));
+    const reopened = openEditor(); reopened.loadProjectData(project.design);
+    expect(readCountdown(bodyOf(reopened)!.components().last()).config).toEqual(config);
+    const { html, warnings } = exportEmail(reopened, meta);
+    expect(html).toContain('https://assets.example.com/api/countdown.gif?end=2090');
+    expect(html).toContain('10/11/2090 às 18:30');
+    expect(html).toContain('alt="Prazo:');
+    expect(html).not.toContain('<script');
+    expect(warnings).toHaveLength(1);
+  });
+  it('alerta sobre prazo vencido e endpoint local e preserva blocos vizinhos', () => {
+    const editor = openEditor(); const body = bodyOf(editor)!;
+    const first = body.components().first().toHTML();
+    insertBlock(editor, 'countdown');
+    const timer = body.components().last();
+    updateCountdown(timer, { ...readCountdown(timer).config, end: '2020-01-01T00:00:00.000Z' }, '/api/countdown.gif');
+    const { warnings } = exportEmail(editor, meta);
+    expect(warnings).toContainEqual(expect.stringContaining('modo local'));
+    expect(warnings).toContainEqual(expect.stringContaining('prazo encerrado'));
+    expect(body.components().first().toHTML()).toBe(first);
+  });
+  it('duplica o cronômetro como unidade independente e permite removê-lo', () => {
+    const editor = openEditor(); const body = bodyOf(editor)!;
+    insertBlock(editor, 'countdown');
+    const timer = body.components().last();
+    const copy = timer.clone(); body.append(copy);
+    const original = readCountdown(timer);
+    updateCountdown(copy, { ...original.config, accent: '#112233' }, original.endpoint);
+    expect(readCountdown(timer).config.accent).not.toBe('#112233');
+    expect(readCountdown(copy).config.accent).toBe('#112233');
+    copy.remove(); expect(body.components().last()).toBe(timer);
   });
 });

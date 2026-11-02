@@ -1,3 +1,5 @@
+import { CountdownSettings } from './CountdownSettings';
+import { countdownAncestor, isCountdown } from './countdown';
 import type { Component, Editor } from 'grapesjs';
 import type { EmailEditorProps, MergeTag } from './types';
 import { bodyOf, innerHtml, labels, sectionOf } from './engine';
@@ -11,14 +13,16 @@ interface Props {
   version: number;
   mergeTags: MergeTag[];
   onCode: () => void;
+  onSectionCode: () => void;
   notify: (message: string) => void;
   onUploadImage?: EmailEditorProps['onUploadImage'];
 }
-export function Inspector({ editor, selected, version, mergeTags, onCode, notify, onUploadImage }: Props) {
+export function Inspector({ editor, selected, version, mergeTags, onCode, onSectionCode, notify, onUploadImage }: Props) {
   const [tab, setTab] = useState<'block' | 'email'>('block');
   const [uploading, setUploading] = useState(false);
   const file = useRef<HTMLInputElement>(null);
-  const active = tab === 'email' ? (editor && bodyOf(editor)) : selected;
+  const active = tab === 'email' ? (editor && bodyOf(editor)) : countdownAncestor(selected) || selected;
+  const timer = isCountdown(active);
   const type = active?.get('type') || '';
   const attrs = active?.getAttributes() || {};
   const isText = ['mj-text', 'mj-button'].includes(type);
@@ -66,9 +70,10 @@ export function Inspector({ editor, selected, version, mergeTags, onCode, notify
     <div className="segmented inspector-tabs"><button className={tab === 'block' ? 'active' : ''} onClick={() => setTab('block')}>Bloco</button><button className={tab === 'email' ? 'active' : ''} onClick={() => setTab('email')}>E-mail</button></div>
     <div className="inspector-scroll">
     {!active ? <div className="empty-inspector"><MouseGraphic/><h3>Cada detalhe conta.</h3><p>Selecione um bloco no e-mail para personalizar cores, fontes e espaçamentos.</p><button className="text-button" onClick={() => setTab('email')}>Editar estilo do e-mail →</button></div> : <>
-      <div className="selected-heading"><span className="type-dot"/><strong>{labels[type] || 'Bloco'}</strong>{type !== 'mj-body' && <span className="selection-tag">Selecionado</span>}</div>
+      <div className="selected-heading"><span className="type-dot"/><strong>{timer ? 'Cronômetro' : labels[type] || 'Bloco'}</strong>{type !== 'mj-body' && <span className="selection-tag">Selecionado</span>}</div>
       {type !== 'mj-body' && <div className="selection-actions"><IconButton label="Mover para cima" onClick={() => move(-1)} disabled={active.index() === 0}><ArrowUp size={16}/></IconButton><IconButton label="Mover para baixo" onClick={() => move(1)} disabled={active.index() >= (active.parent()?.components().length || 0) - 1}><ArrowDown size={16}/></IconButton><IconButton label="Duplicar bloco" onClick={() => { const copy = active.clone(); active.parent()?.append(copy, { at: active.index() + 1 }); editor?.select(copy); }}><Copy size={16}/></IconButton><span/><IconButton label="Excluir bloco" onClick={() => { active.remove(); editor?.select(undefined); notify('Bloco removido. Você pode desfazer.'); }}><Trash2 size={16}/></IconButton></div>}
-      {type !== 'mj-body' && <div className="code-action"><button className="button button-full" onClick={onCode}><Code2 size={16}/>Editar HTML do bloco</button><p className="hint">Controle cada detalhe do código.</p></div>}
+      {type !== 'mj-body' && <div className="code-action"><button className="button button-full" onClick={onCode}><Code2 size={16}/>Editar HTML do bloco</button><p className="hint">Controle cada detalhe do código.</p>{selected && sectionOf(selected) && selected !== sectionOf(selected) && <button className="text-button" onClick={onSectionCode}><Code2 size={13}/> Ver HTML da seção inteira</button>}</div>}
+      {timer && <CountdownSettings key={active.cid} component={active} version={version} notify={notify}/>}
       {type === 'mj-body' && <section className="property-section"><h3>Estrutura</h3><Field label="Largura do conteúdo"><select aria-label="Largura do conteúdo" value={attrs.width || '600px'} onChange={e => set('width', e.target.value)}><option value="500px">500 px · compacto</option><option value="600px">600 px · padrão</option><option value="680px">680 px · amplo</option><option value="800px">800 px · extra amplo</option></select></Field><ColorField label="Fundo do e-mail" value={attrs['background-color'] || '#f0eef5'} onChange={value => set('background-color', value)}/><p className="hint">O conteúdo se adapta à largura da tela no celular.</p></section>}
       {type === 'mj-image' && <section className="property-section"><h3>Imagem</h3><img className="image-thumb" src={attrs.src || active.get('src')} alt={attrs.alt || 'Imagem selecionada'}/><Field label="URL da imagem"><input key={`${active.cid}-src-${version}`} type="url" defaultValue={attrs.src || active.get('src')} placeholder="https://..." onBlur={e => changeUrl('src', e.target.value, true)}/></Field><Field label="Texto alternativo"><input value={attrs.alt || ''} onChange={e => set('alt', e.target.value)}/></Field><Field label="Link da imagem"><input key={`${active.cid}-href-${version}`} defaultValue={attrs.href || ''} placeholder="https://..." onBlur={e => changeUrl('href', e.target.value)}/></Field>{onUploadImage ? <><input ref={file} hidden type="file" accept="image/png,image/jpeg,image/gif,image/webp" onChange={e => e.target.files?.[0] && upload(e.target.files[0])}/><button className="button button-full" onClick={() => file.current?.click()} disabled={uploading}><Upload size={15}/>{uploading ? 'Enviando…' : 'Enviar imagem'}</button></> : <p className="hint">Cole o endereço público da sua imagem. O upload pode ser conectado ao armazenamento do seu SaaS.</p>}</section>}
       {type === 'mj-button' && <section className="property-section"><h3>Conteúdo do botão</h3><Field label="Texto do botão"><input key={`${active.cid}-text`} defaultValue={active.getEl()?.textContent || 'Saiba mais'} onBlur={e => { active.set('content', ''); active.components(escapeXml(e.target.value)); }}/></Field><Field label="Link do botão"><input key={`${active.cid}-href-${version}`} defaultValue={attrs.href || ''} placeholder="https://..." onBlur={e => changeUrl('href', e.target.value)}/></Field></section>}

@@ -2,12 +2,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { EmailEditor, parseProject, type EmailExport, type EmailProject } from '../src/editor';
 
-export function SaasEmailEditor({ emailId, tenantId }: { emailId: string; tenantId: string }) {
+export function SaasEmailEditor({ emailId, tenantId, countdownEndpoint }: { emailId: string; tenantId: string; countdownEndpoint: string }) {
   // A separate keyed loader prevents one document's state from leaking into another.
-  return <EmailLoader key={`${tenantId}:${emailId}`} emailId={emailId} />;
+  return <EmailLoader key={`${tenantId}:${emailId}`} emailId={emailId} countdownEndpoint={countdownEndpoint} />;
 }
 
-function EmailLoader({ emailId }: { emailId: string }) {
+function EmailLoader({ emailId, countdownEndpoint }: { emailId: string; countdownEndpoint: string }) {
   const [project, setProject] = useState<EmailProject>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -49,5 +49,5 @@ function EmailLoader({ emailId }: { emailId: string }) {
   }
   if (loading) return <p role="status">Carregando e-mail…</p>;
   if (error) return <p role="alert">{error}</p>;
-  return <EmailEditor initialProject={project} brandName="Meu SaaS" onSave={save} onUploadImage={upload} />;
+  return <EmailEditor initialProject={project} brandName="Meu SaaS" countdownEndpoint={countdownEndpoint} onSave={save} onUploadImage={upload} />;
 }

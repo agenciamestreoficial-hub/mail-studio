@@ -13,13 +13,13 @@ npm run dev
 
 O arquivo `.replit` configura Node 22, porta 5173 e o comando Run. O Vite aceita os hosts de desenvolvimento do Replit e o host da demonstração interna. Se usar um domínio de desenvolvimento próprio, acrescente **apenas esse domínio** em `server.allowedHosts`, sem desativar a verificação de host.
 
-Para hospedar somente a demonstração estática, use o build `npm ci && npm run build` e o diretório público `dist`. A publicação estática não adiciona backend nem salvamento na nuvem. Para integrar ao SaaS existente, siga os próximos passos e preserve a configuração de publicação dele.
+Para publicar a demonstração com cronômetro, use build `npm ci && npm run build` e execução `npm start` em uma publicação com servidor (por exemplo, Autoscale). O `.replit` usa `deploymentTarget = "cloudrun"`, conforme o exemplo de configuração oficial. O servidor serve `dist` e a rota de GIF na mesma porta; configure `PORT` conforme o ambiente. Uma publicação somente estática não executa o serviço de cronômetro. Não foi realizada publicação no Replit nesta entrega. Para integrar ao SaaS existente, siga os próximos passos e preserve a configuração de publicação dele.
 
 Referências oficiais consultadas: [Importação de projetos](https://docs.replit.com/pt/build/welcome), [configuração do projeto](https://docs.replit.com/pt/references/project-setup/configuration) e [publicação estática](https://docs.replit.com/pt/references/publishing/static-deployments).
 
 ## 2. Integrar em um SaaS React existente
 
-1. Copie a pasta `src/editor` para o projeto existente. Não copie `main.tsx`, `demo.css`, `.replit`, `vite.config.ts` nem a configuração de publicação por cima do SaaS.
+1. Copie as pastas `src/editor` e `src/countdown` para o projeto existente. Não copie `main.tsx`, `demo.css`, `.replit`, `vite.config.ts` nem a configuração de publicação por cima do SaaS.
 2. Adicione as dependências de produção em versões compatíveis com o lockfile: `grapesjs`, `grapesjs-mjml`, `dompurify`, `lucide-react`. Este projeto usa React 19; mantenha uma única instalação de React e valide compatibilidade caso o SaaS use outra versão.
 3. Crie uma rota autenticada para a edição, por exemplo `/emails/:id/editor`.
 4. Carregue o projeto do backend **antes** de montar `EmailEditor`. Use uma `key` que inclua a identidade do tenant e do documento. `initialProject` é lido apenas na montagem.
@@ -35,6 +35,7 @@ import { EmailEditor, type EmailExport } from './editor';
   key={`${tenantId}:${emailId}`}
   initialProject={loadedProject}
   brandName="Meu SaaS"
+  countdownEndpoint="https://seu-dominio.com/api/countdown.gif"
   onSave={async (result: EmailExport) => {
     const response = await fetch(`/api/email-designs/${emailId}`, {
       method: 'PUT',
@@ -65,6 +66,14 @@ const EmailEditor = dynamic(
 ```
 
 Carregue a rota sob demanda: o motor MJML é relativamente grande. O build atual inclui cerca de 740 KB gzip de JavaScript do editor, além do runtime React; não o carregue em todas as páginas do SaaS.
+
+### Cronômetro e código HTML
+
+Para o cronômetro, adapte `createCountdownMiddleware()` de `server/countdown-route.ts` ao servidor Node do SaaS e instale `gifenc@1.0.3`. Importe também `server/countdown-gif.ts`, a declaração de tipos e `src/countdown/config.ts`. Mantenha a rota de imagem pública, sem login nem cookies, para os clientes de e-mail conseguirem carregá-la. Leia [COUNTDOWN.md](COUNTDOWN.md) para configuração e cache.
+
+Passe a URL HTTPS pública na prop `countdownEndpoint`. Na demonstração standalone, defina `VITE_COUNTDOWN_ENDPOINT=https://seu-dominio.com/api/countdown.gif` **antes do build**. O valor não é segredo. Para documentos antigos com cronômetro local, selecione cada cronômetro → Serviço de imagem → URL pública → Aplicar.
+
+Preserve os campos opcionais `mode` e `htmlSource` do envelope JSON. `mode: "html"` usa o documento de código; `design` é o rascunho visual separado. No modo HTML, a saída `mjml` é uma string vazia. Salve e envie `result.html` do modo ativo, sem recompilar `design` por cima do código importado. O modo de HTML aceita arquivos/código até 2 MB, com validação e sanitização também no servidor.
 
 ## 3. Contrato sugerido do backend
 
@@ -119,6 +128,8 @@ O editor não dispara e-mails. Conecte seu provedor atual em um fluxo separado d
 - Erros de rede e conflitos `409` aparecem na interface e não exibem “salvo” indevidamente.
 - Usuário de outro tenant recebe `404/403` e não acessa projeto ou upload.
 - Assunto/pré-cabeçalho e variáveis corretos em um envio real de teste.
+- Importar `.html`, editar código, conferir CSS/condicionais de Outlook, salvar e reabrir no modo HTML.
+- Aplicar prazo/fuso/cores do cronômetro e validar a rota HTTPS após logout; testar prazo vencido e bloquear envio com URL local.
 - Enviar amostras a Gmail, Outlook e Apple Mail antes de liberar produção.
 
 Use também `npm test` e `npm run build`. Não reutilize chaves SMTP no frontend.

@@ -2,15 +2,19 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Component, Editor } from 'grapesjs';
 import 'grapesjs/dist/css/grapes.min.css';
 import './editor.css';
-import { applyBlockHtml, blockHtml, bodyOf, codeTarget, createEditor, downloadFile, editableComponent, exportEmail, insertBlock, labels, snapshot } from './engine';
+import { applyBlockHtml, blockHtml, bodyOf, codeTarget, createEditor, downloadFile, editableComponent, exportEmail, insertBlock, labels, snapshot, prepareBlock, componentLabel, sectionOf } from './engine';
 import { blockDefinitions, templates } from './templates';
 import { parseProject } from './security';
+import { EmailFrame } from './EmailFrame';
+import { HtmlWorkspace } from './HtmlWorkspace';
+import { MAX_HTML_SIZE, sanitizeEmailDocument } from './html-document';
+import { countdownAncestor } from './countdown';
 import { defaultMergeTags, type EmailEditorProps, type EmailExport, type EmailMetadata, type EmailProject } from './types';
 import { Inspector } from './Inspector';
 import { Check, CheckCircle2, ChevronRight, Code2, Copy, Download, Eye, Field, FileJson, GripVertical, HelpCircle, IconButton, icons, LayoutTemplate, ListTree, Loader2, Mail, Modal, Monitor, Plus, Redo2, Search, Smartphone, Sparkles, Undo2, Upload } from './ui';
 
 type Panel = 'blocks' | 'templates' | 'layers';
-type Dialog = 'code' | 'export' | 'preview' | 'help' | 'template' | 'import' | null;
+type Dialog = 'code' | 'export' | 'preview' | 'help' | 'template' | 'import' | 'import-html' | null;
 const defaultMetadata: EmailMetadata = { name: 'Boas-vindas · Aurora', subject: templates[0].subject, preheader: templates[0].preheader };
 
 export function EmailEditor(props: EmailEditorProps) {
@@ -23,6 +27,12 @@ export function EmailEditor(props: EmailEditorProps) {
   const [metadata, setMetadata] = useState(defaultMetadata);
   const [editor, setEditor] = useState<Editor>();
   const [selected, setSelected] = useState<Component>();
+  const modeRef = useRef<'visual' | 'html'>('visual');
+  const htmlSourceRef = useRef('');
+  const [mode, setMode] = useState<'visual' | 'html'>('visual');
+  const [htmlSource, setHtmlSource] = useState('');
+  const [incomingHtml, setIncomingHtml] = useState('');
+  const htmlFileInput = useRef<HTMLInputElement>(null);
   const [ready, setReady] = useState(false);
   const [version, setVersion] = useState(0);
   const [panel, setPanel] = useState<Panel>('blocks');
@@ -52,7 +62,7 @@ export function EmailEditor(props: EmailEditorProps) {
   const persist = useCallback(() => {
     const ed = editorRef.current;
     if (!ed) return;
-    const project = snapshot(ed, metadataRef.current);
+    const project = snapshot(ed, metadataRef.current, htmlSourceRef.current, modeRef.current);
     try {
       if (callbacks.current.storageKey) {
         localStorage.setItem(callbacks.current.storageKey, JSON.stringify(project));
@@ -64,7 +74,7 @@ export function EmailEditor(props: EmailEditorProps) {
 
   useEffect(() => {
     if (!canvas.current) return;
-    const ed = createEditor(canvas.current);
+    const ed = createEditor(canvas.current, true, callbacks.current.countdownEndpoint);
     editorRef.current = ed;
     setEditor(ed);
     let startingProject = callbacks.current.initialProject;
@@ -79,6 +89,8 @@ export function EmailEditor(props: EmailEditorProps) {
         const safe = parseProject(JSON.stringify(startingProject));
         ed.loadProjectData(safe.design);
         metadataRef.current = safe.metadata; setMetadata(safe.metadata);
+        modeRef.current = safe.mode || 'visual'; setMode(modeRef.current);
+        htmlSourceRef.current = safe.htmlSource || ''; setHtmlSource(htmlSourceRef.current);
       } catch { notify('O projeto recebido não é válido. O modelo inicial está aberto.'); }
     }
     ed.on('load', () => {
@@ -87,7 +99,11 @@ export function EmailEditor(props: EmailEditorProps) {
       setVersion(v => v + 1);
       ed.UndoManager.clear();
     });
-    const select = (component?: Component) => setSelected(editableComponent(component));
+    const select = (component?: Component) => {
+      const timer = countdownAncestor(component);
+      if (timer && timer !== component) { ed.select(timer); return; }
+      setSelected(editableComponent(component));
+    };
     ed.on('component:selected', select);
     ed.on('component:deselected', () => select(ed.getSelected()));
     ed.on('undo redo', () => {
@@ -119,11 +135,11 @@ export function EmailEditor(props: EmailEditorProps) {
     setSaving(true); clearTimeout(saveTimer.current); persist();
     try {
       if (callbacks.current.onSave) {
-        await callbacks.current.onSave(exportEmail(editor, metadataRef.current));
+        await callbacks.current.onSave(exportEmail(editor, metadataRef.current, htmlSourceRef.current, modeRef.current));
         setStatus('Salvo no seu aplicativo'); notify('E-mail salvo no seu aplicativo.');
       } else if (storageKey) notify('Projeto salvo neste navegador. Exporte o JSON para levar com você.');
       else {
-        downloadFile('email-projeto.json', JSON.stringify(snapshot(editor, metadataRef.current), null, 2), 'application/json');
+        downloadFile('email-projeto.json', JSON.stringify(snapshot(editor, metadataRef.current, htmlSourceRef.current, modeRef.current), null, 2), 'application/json');
         notify('Projeto JSON baixado.');
       }
     } catch (e) { setStatus('Falha ao salvar no aplicativo'); notify(e instanceof Error ? e.message : 'Falha ao salvar.'); }
@@ -137,12 +153,12 @@ export function EmailEditor(props: EmailEditorProps) {
 
   function openExport(mode: 'export' | 'preview') {
     if (!editor) return;
-    try { setExported(exportEmail(editor, metadataRef.current)); setDialog(mode); }
+    try { setExported(exportEmail(editor, metadataRef.current, htmlSourceRef.current, modeRef.current)); setDialog(mode); }
     catch (e) { notify(e instanceof Error ? e.message : 'Falha ao gerar o e-mail.'); }
   }
-  function editCode() {
-    if (!editor || !selected) return;
-    const target = codeTarget(selected);
+  function editCode(component = selected) {
+    if (!editor || !component) return;
+    const target = codeTarget(component);
     if (target.get('type') === 'mj-body') return;
     try { codeComponent.current = target; setCode(blockHtml(editor, target)); setDialog('code'); }
     catch { notify('Não foi possível abrir o HTML deste bloco.'); }
@@ -169,7 +185,41 @@ export function EmailEditor(props: EmailEditorProps) {
   function loadImport() {
     if (!editor || !pendingImport) return;
     editor.loadProjectData(pendingImport.design); updateMetadata(pendingImport.metadata);
+    modeRef.current = pendingImport.mode || 'visual'; setMode(modeRef.current);
+    htmlSourceRef.current = pendingImport.htmlSource || ''; setHtmlSource(htmlSourceRef.current);
     editor.UndoManager.clear(); editor.select(undefined); setSelected(undefined); closeDialog(); notify('Projeto importado com sucesso.');
+  }
+  function changeHtml(value: string) {
+    htmlSourceRef.current = value; setHtmlSource(value); setStatus('Salvando alterações…');
+    clearTimeout(saveTimer.current); saveTimer.current = setTimeout(persist, 700);
+  }
+  function enterHtmlMode() {
+    if (!editor) return;
+    if (modeRef.current === 'html') return;
+    try {
+      if (!htmlSourceRef.current.trim()) changeHtml(exportEmail(editor, metadataRef.current).html);
+      modeRef.current = 'html'; setMode('html'); setExportTab('html');
+    } catch (e) { notify(e instanceof Error ? e.message : 'Não foi possível abrir o HTML.'); }
+  }
+  function returnToBlocks() {
+    modeRef.current = 'visual'; setMode('visual'); persist();
+    requestAnimationFrame(() => editor?.refresh());
+  }
+  function openHtmlImport() { setIncomingHtml(''); setCodeError(''); setDialog('import-html'); }
+  async function readHtmlFile(file: File) {
+    try {
+      if (file.size > MAX_HTML_SIZE) throw new Error('O HTML deve ter até 2 MB.');
+      if (!/\.html?$/i.test(file.name)) throw new Error('Escolha um arquivo .html ou .htm.');
+      setIncomingHtml(await file.text()); setCodeError('');
+    } catch (e) { setCodeError(e instanceof Error ? e.message : 'Falha ao ler o arquivo.'); }
+    if (htmlFileInput.current) htmlFileInput.current.value = '';
+  }
+  function applyHtmlImport() {
+    try {
+      const clean = sanitizeEmailDocument(incomingHtml);
+      modeRef.current = 'html'; setMode('html'); changeHtml(clean); setExportTab('html'); closeDialog();
+      notify('HTML importado. Conteúdo executável foi removido; tabelas e estilos foram mantidos.');
+    } catch (e) { setCodeError(e instanceof Error ? e.message : 'Revise o HTML.'); }
   }
   function changeDevice(value: 'desktop' | 'mobile') { setDevice(value); editor?.setDevice(value); }
   const filteredBlocks = blockDefinitions.filter(block => block.label.toLocaleLowerCase('pt-BR').includes(query.toLocaleLowerCase('pt-BR')));
@@ -179,7 +229,7 @@ export function EmailEditor(props: EmailEditorProps) {
     notify('Arquivo exportado.');
   }
   function projectDownload() {
-    if (editor) downloadFile('email-projeto.json', JSON.stringify(snapshot(editor, metadataRef.current), null, 2), 'application/json');
+    if (editor) downloadFile('email-projeto.json', JSON.stringify(snapshot(editor, metadataRef.current, htmlSourceRef.current, modeRef.current), null, 2), 'application/json');
   }
 
   return <div className="mail-studio">
@@ -189,33 +239,37 @@ export function EmailEditor(props: EmailEditorProps) {
       <div className="header-actions"><span className="save-status"><span className="green-dot"/>{status}</span><button className="button" onClick={() => openExport('preview')} disabled={!ready}><Eye size={16}/><span>Prévia</span></button><button className="button primary" onClick={save} disabled={!ready || saving}>{saving ? <Loader2 size={16} className="spin"/> : <Check size={16}/>}Salvar e-mail</button></div>
     </header>
     <div className="message-meta"><div className="message-label"><Mail size={16}/><span>Sua mensagem</span></div><Field label="Assunto"><input aria-label="Assunto do e-mail" maxLength={250} value={metadata.subject} onChange={e => updateMetadata({ subject: e.target.value })} placeholder="Um assunto que dá vontade de abrir"/></Field><div className="meta-divider"/><Field label="Pré-cabeçalho"><input aria-label="Pré-cabeçalho" maxLength={250} value={metadata.preheader} onChange={e => updateMetadata({ preheader: e.target.value })} placeholder="O texto que aparece depois do assunto"/></Field><span className="draft-badge">Rascunho</span></div>
-    <main className="workspace">
+    <main className={`workspace ${mode === 'html' ? 'workspace-html' : ''}`}>
       <nav className="nav-rail" aria-label="Ferramentas do editor">
-        <button className={panel === 'blocks' ? 'rail-button active' : 'rail-button'} onClick={() => setPanel('blocks')} title="Blocos"><Plus size={21}/><span>Blocos</span></button>
-        <button className={panel === 'templates' ? 'rail-button active' : 'rail-button'} onClick={() => setPanel('templates')} title="Modelos"><LayoutTemplate size={20}/><span>Modelos</span></button>
-        <button className={panel === 'layers' ? 'rail-button active' : 'rail-button'} onClick={() => setPanel('layers')} title="Estrutura"><ListTree size={20}/><span>Estrutura</span></button>
-        <div className="rail-spacer"/>
+        <button className={mode === 'visual' && panel === 'blocks' ? 'rail-button active' : 'rail-button'} onClick={() => { returnToBlocks(); setPanel('blocks'); }} title="Blocos"><Plus size={21}/><span>Blocos</span></button>
+        <button className={panel === 'templates' ? 'rail-button active' : 'rail-button'} onClick={() => { returnToBlocks(); setPanel('templates'); }} title="Modelos"><LayoutTemplate size={20}/><span>Modelos</span></button>
+        <button className={panel === 'layers' ? 'rail-button active' : 'rail-button'} onClick={() => { returnToBlocks(); setPanel('layers'); }} title="Estrutura"><ListTree size={20}/><span>Estrutura</span></button>
+        <button className={mode === 'html' ? 'rail-button active' : 'rail-button'} onClick={enterHtmlMode} title="Editar HTML completo"><Code2 size={20}/><span>HTML</span></button><div className="rail-spacer"/>
         <button className="rail-button" onClick={() => setDialog('help')} title="Como usar"><HelpCircle size={20}/><span>Ajuda</span></button><div className="avatar" title="Seu espaço de criação">MS</div>
       </nav>
       <aside className="library-panel">
-        {panel === 'blocks' && <><div className="panel-heading"><div><span className="eyebrow">SUA PRÓXIMA BOA IDEIA</span><h2>Comece com um bloco</h2></div></div><p className="panel-description">Arraste para o e-mail ou clique para adicionar.</p><div className="search-field"><Search size={16}/><input aria-label="Buscar blocos" placeholder="Buscar blocos…" value={query} onChange={e => setQuery(e.target.value)}/><span>⌕</span></div><div className="block-scroll">{(['Conteúdo', 'Layouts'] as const).map(category => <section key={category} className="block-category"><div className="category-label"><h3>{category}</h3><span>{filteredBlocks.filter(b => b.category === category).length}</span></div><div className="block-grid">{filteredBlocks.filter(b => b.category === category).map(block => { const Icon = icons[block.icon as keyof typeof icons]; return <button key={block.id} className="block-card" draggable={false} onPointerDown={e => { if (e.button !== 0 || !editor) return; editor.refresh(); editor.BlockManager.startDrag(editor.Blocks.get(block.id), e.nativeEvent); window.addEventListener('pointerup', () => editor.BlockManager.endDrag(), { once: true }); }} onClick={() => editor && insertBlock(editor, block.id)} disabled={!ready} aria-label={`Adicionar ${block.label}`}><Icon size={25} strokeWidth={1.4}/><span>{block.label}</span><GripVertical className="block-grip" size={13}/></button>; })}</div></section>)}{!filteredBlocks.length && <p className="hint">Nenhum bloco encontrado.</p>}</div><div className="palette-tip"><div className="tip-icon"><Sparkles size={17}/></div><div><strong>Feito para ser seu.</strong><p>Combine blocos e crie um e-mail com a personalidade da sua marca.</p></div></div></>}
-        {panel === 'templates' && <><div className="panel-heading"><div><span className="eyebrow">UM PONTO DE PARTIDA</span><h2>Modelos para inspirar</h2></div></div><p className="panel-description">Escolha, personalize e deixe com a sua cara.</p><div className="template-list">{templates.map((template, index) => <button className="template-card" key={template.id} onClick={() => { setPendingTemplate(index); setDialog('template'); }}><div className="template-art" style={{ background: template.color }}><div className="mini-email"><span/><b/>{index !== 3 && <i/>}<em/><em/><small/></div><span className="template-use">Usar modelo →</span></div><div><strong>{template.name}</strong><span>{template.category}</span></div></button>)}</div></>}
-        {panel === 'layers' && <><div className="panel-heading"><div><span className="eyebrow">TUDO NO SEU LUGAR</span><h2>Estrutura do e-mail</h2></div></div><p className="panel-description">Selecione um elemento. Use as setas à direita para reorganizar.</p><div className="layers-list">{editor && bodyOf(editor)?.components().map((section: Component, i: number) => <div className="layer-group" key={section.cid}><button className={selected === section ? 'layer selected' : 'layer'} onClick={() => editor.select(section)}><LayoutTemplate size={15}/><strong>{section.get('type') === 'mj-raw' ? 'HTML' : 'Seção'} {i + 1}</strong><span>{section.components().length}</span></button>{section.findType('mj-column').flatMap((col: Component) => col.components().map((child: Component) => <button key={child.cid} className={selected === child ? 'layer child selected' : 'layer child'} onClick={() => { editor.select(child); child.getEl()?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}><span className="layer-line"/>{labels[child.get('type') || ''] || 'Conteúdo'}<small>{(child.getEl()?.textContent || '').trim().slice(0, 21)}</small></button>))}</div>)}</div></>}
-        <div className="library-footer"><button onClick={() => importInput.current?.click()}><Upload size={14}/>Importar JSON</button><button onClick={projectDownload} disabled={!ready}><FileJson size={14}/>Baixar projeto</button><input ref={importInput} hidden type="file" accept="application/json,.json" onChange={e => e.target.files?.[0] && importProject(e.target.files[0])}/></div>
+        {mode === 'html' && <><div className="panel-heading"><div><span className="eyebrow">LIBERDADE NO CÓDIGO</span><h2>Seu e-mail em HTML</h2></div></div><div className="html-library-content"><p>Importe um e-mail pronto ou escreva o código completo. A prévia acompanha suas alterações.</p><button className="button primary button-full" onClick={openHtmlImport}><Upload size={15}/>Importar ou colar HTML</button><p>Tabelas, estilos e comentários compatíveis com Outlook são preservados. Scripts e formulários são removidos.</p><div className="notice">O HTML importado não é convertido automaticamente em blocos.</div><button className="button button-full" onClick={returnToBlocks}><LayoutTemplate size={15}/>Voltar ao rascunho em blocos</button><p className="hint">O rascunho visual anterior foi mantido. As mudanças feitas no código não são aplicadas a ele.</p></div></>}
+
+        {mode === 'visual' && panel === 'blocks' && <><div className="panel-heading"><div><span className="eyebrow">SUA PRÓXIMA BOA IDEIA</span><h2>Comece com um bloco</h2></div></div><p className="panel-description">Arraste para o e-mail ou clique para adicionar.</p><div className="search-field"><Search size={16}/><input aria-label="Buscar blocos" placeholder="Buscar blocos…" value={query} onChange={e => setQuery(e.target.value)}/><span>⌕</span></div><div className="block-scroll">{(['Conteúdo', 'Layouts'] as const).map(category => <section key={category} className="block-category"><div className="category-label"><h3>{category}</h3><span>{filteredBlocks.filter(b => b.category === category).length}</span></div><div className="block-grid">{filteredBlocks.filter(b => b.category === category).map(block => { const Icon = icons[block.icon as keyof typeof icons]; return <button key={block.id} className="block-card" draggable={false} onPointerDown={e => { if (e.button !== 0 || !editor) return; editor.refresh(); prepareBlock(editor, block.id); editor.BlockManager.startDrag(editor.Blocks.get(block.id), e.nativeEvent); window.addEventListener('pointerup', () => editor.BlockManager.endDrag(), { once: true }); }} onClick={() => editor && insertBlock(editor, block.id)} disabled={!ready} aria-label={`Adicionar ${block.label}`}><Icon size={25} strokeWidth={1.4}/><span>{block.label}</span><GripVertical className="block-grip" size={13}/></button>; })}</div></section>)}{!filteredBlocks.length && <p className="hint">Nenhum bloco encontrado.</p>}</div><div className="palette-tip"><div className="tip-icon"><Sparkles size={17}/></div><div><strong>Feito para ser seu.</strong><p>Combine blocos e crie um e-mail com a personalidade da sua marca.</p></div></div></>}
+        {mode === 'visual' && panel === 'templates' && <><div className="panel-heading"><div><span className="eyebrow">UM PONTO DE PARTIDA</span><h2>Modelos para inspirar</h2></div></div><p className="panel-description">Escolha, personalize e deixe com a sua cara.</p><div className="template-list">{templates.map((template, index) => <button className="template-card" key={template.id} onClick={() => { setPendingTemplate(index); setDialog('template'); }}><div className="template-art" style={{ background: template.color }}><div className="mini-email"><span/><b/>{index !== 3 && <i/>}<em/><em/><small/></div><span className="template-use">Usar modelo →</span></div><div><strong>{template.name}</strong><span>{template.category}</span></div></button>)}</div></>}
+        {mode === 'visual' && panel === 'layers' && <><div className="panel-heading"><div><span className="eyebrow">TUDO NO SEU LUGAR</span><h2>Estrutura do e-mail</h2></div></div><p className="panel-description">Selecione um elemento. Use as setas à direita para reorganizar.</p><div className="layers-list">{editor && bodyOf(editor)?.components().map((section: Component, i: number) => <div className="layer-group" key={section.cid}><div className="layer-section-row"><button className={selected === section ? 'layer selected' : 'layer'} onClick={() => editor.select(section)}><LayoutTemplate size={15}/><strong>{section.get('type') === 'mj-raw' ? 'HTML' : componentLabel(section)} {i + 1}</strong><span>{section.components().length}</span></button><IconButton label={`Editar HTML da seção ${i + 1}`} onClick={() => editCode(section)}><Code2 size={14}/></IconButton></div>{section.findType('mj-column').flatMap((col: Component) => col.components().map((child: Component) => <button key={child.cid} className={selected === child ? 'layer child selected' : 'layer child'} onClick={() => { editor.select(child); child.getEl()?.scrollIntoView({ block: 'center', behavior: 'smooth' }); }}><span className="layer-line"/>{labels[child.get('type') || ''] || 'Conteúdo'}<small>{(child.getEl()?.textContent || '').trim().slice(0, 21)}</small></button>))}</div>)}</div></>}
+        <div className="library-footer"><button onClick={openHtmlImport}><Code2 size={14}/>Importar HTML</button><button onClick={() => importInput.current?.click()}><Upload size={14}/>Importar JSON</button><button onClick={projectDownload} disabled={!ready}><FileJson size={14}/>Baixar projeto</button><input ref={importInput} hidden type="file" accept="application/json,.json" onChange={e => e.target.files?.[0] && importProject(e.target.files[0])}/></div>
       </aside>
-      <section className="editor-area" aria-label="Área de edição">
+      <section className="editor-area" aria-label="Área de edição" style={mode === 'html' ? { display: 'none' } : undefined}>
         <div className="canvas-toolbar"><div className="history-buttons"><IconButton label="Desfazer" disabled={!editor?.UndoManager.hasUndo()} onClick={() => editor?.UndoManager.undo()}><Undo2 size={17}/></IconButton><IconButton label="Refazer" disabled={!editor?.UndoManager.hasRedo()} onClick={() => editor?.UndoManager.redo()}><Redo2 size={17}/></IconButton><span className="toolbar-line"/><span className="canvas-label">EDITOR VISUAL</span></div><div className="segmented device-switch"><button title="Desktop" aria-label="Visualização desktop" className={device === 'desktop' ? 'active' : ''} onClick={() => changeDevice('desktop')}><Monitor size={16}/><span>Desktop</span></button><button title="Celular" aria-label="Visualização celular" className={device === 'mobile' ? 'active' : ''} onClick={() => changeDevice('mobile')}><Smartphone size={16}/><span>Celular</span></button></div><button className="export-button" onClick={() => openExport('export')} disabled={!ready}><Code2 size={16}/><span>Exportar</span><ChevronRight size={14}/></button></div>
         <div className="canvas-container"><div className="canvas-topline"><span>{device === 'desktop' ? 'SEU E-MAIL, DO SEU JEITO' : 'PRÉVIA EM TELA PEQUENA'}</span><span>{device === 'desktop' ? 'Responsivo' : '375 px'} <CheckCircle2 size={12}/></span></div><div ref={canvas} className="grapes-canvas"/>{!ready && <div className="loading-editor"><Loader2 className="spin" size={27}/><h3>Preparando seu espaço de criação…</h3></div>}</div>
         <footer className="canvas-footer"><span><span className="keyboard-key">↖</span> Dois cliques no texto para editar</span><span>HTML responsivo <span className="footer-dot">·</span> 100% seu</span></footer>
       </section>
-      <Inspector editor={editor} selected={selected} version={version} mergeTags={mergeTags} onCode={editCode} notify={notify} onUploadImage={onUploadImage}/>
+      {mode === 'html' && <section className="html-editor-area"><div className="html-mode-actions"><span><Code2 size={15}/>MODO HTML</span><button className="export-button" onClick={() => openExport('export')}><Code2 size={16}/>Exportar<ChevronRight size={14}/></button></div><HtmlWorkspace source={htmlSource} metadata={metadata} onChange={changeHtml} onImport={openHtmlImport}/></section>}
+      {mode === 'visual' && <Inspector editor={editor} selected={selected} version={version} mergeTags={mergeTags} onCode={() => editCode()} onSectionCode={() => editCode(sectionOf(selected))} notify={notify} onUploadImage={onUploadImage}/>}
     </main>
     {toast && <div className="toast" role="status"><CheckCircle2 size={18}/>{toast}</div>}
     {dialog === 'code' && <Modal title="HTML do bloco" subtitle="Edite o código e aplique apenas neste bloco." wide onClose={closeDialog} footer={<><span className="modal-footnote">Scripts e elementos executáveis são removidos.</span><button className="button" onClick={closeDialog}>Cancelar</button><button className="button primary" onClick={applyCode}>Aplicar HTML</button></>}>
-      {codeComponent.current && !['mj-text', 'mj-button', 'mj-raw'].includes(codeComponent.current.get('type') || '') && <div className="notice">Este elemento será convertido em HTML personalizado. Seus controles de estrutura serão substituídos pela edição de código; os outros blocos continuam editáveis. Use Desfazer para restaurar.</div>}<div className="code-editor-label"><span><span className="code-dot"/>HTML</span><span>{code.split('\n').length} linhas</span></div><textarea className="code-editor" aria-label="Código HTML do bloco" spellCheck={false} value={code} onChange={e => setCode(e.target.value)}/>{codeError && <p className="error-message" role="alert">{codeError}</p>}
+      {codeComponent.current && !['mj-text', 'mj-button', 'mj-raw'].includes(codeComponent.current.get('type') || '') && <div className="notice">Este elemento será convertido em HTML personalizado. Seus controles de estrutura serão substituídos pela edição de código; os outros blocos continuam editáveis. Use Desfazer para restaurar.</div>}<div className="code-editor-label"><span><span className="code-dot"/>HTML</span><span>{code.split('\n').length} linhas</span></div><textarea className="code-editor" aria-label="Código HTML do bloco" spellCheck={false} value={code} onInput={e => setCode(e.currentTarget.value)}/>{codeError && <p className="error-message" role="alert">{codeError}</p>}
     </Modal>}
-    {dialog === 'export' && exported && <Modal title="Seu e-mail, pronto para levar" subtitle="O HTML é para enviar. O JSON preserva o projeto para continuar editando." wide onClose={closeDialog} footer={<><span className="modal-footnote">{(new Blob([exported.html]).size / 1024).toFixed(1)} KB de HTML · sem marca d’água</span><button className="button" onClick={async () => { try { await navigator.clipboard.writeText(exportedCode); notify('Código copiado.'); } catch { notify('Use o botão Baixar arquivo para exportar.'); } }}><Copy size={15}/>Copiar</button><button className="button primary" onClick={downloadExport}><Download size={15}/>Baixar arquivo</button></>}><div className="export-tabs">{(['html', 'mjml', 'json'] as const).map(type => <button key={type} className={type === exportTab ? 'active' : ''} onClick={() => setExportTab(type)}>{type === 'json' ? 'Projeto JSON' : type.toUpperCase()}</button>)}</div>{exported.warnings.length > 0 && <details className="export-warnings"><summary>{exported.warnings.length} pontos para revisar antes de enviar</summary><ul>{exported.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details>}<textarea className="code-editor export-code" aria-label="Código exportado" value={exportedCode} readOnly spellCheck={false}/></Modal>}
-    {dialog === 'preview' && exported && <Modal title="Veja como ficou" subtitle={metadata.subject || 'Seu e-mail'} wide onClose={closeDialog} footer={<><span className="modal-footnote">As variáveis serão preenchidas pelo seu sistema de envio.</span><button className="button primary" onClick={closeDialog}>Continuar editando</button></>}><div className="preview-controls segmented"><button className={previewDevice === 'desktop' ? 'active' : ''} onClick={() => setPreviewDevice('desktop')}><Monitor size={16}/>Desktop</button><button className={previewDevice === 'mobile' ? 'active' : ''} onClick={() => setPreviewDevice('mobile')}><Smartphone size={16}/>Celular</button></div><div className="preview-surface"><iframe title="Prévia do e-mail exportado" sandbox="" srcDoc={exported.html} className={previewDevice === 'mobile' ? 'preview-frame mobile' : 'preview-frame'}/></div></Modal>}
+    {dialog === 'export' && exported && <Modal title="Seu e-mail, pronto para levar" subtitle="Revise os avisos antes de enviar. O JSON preserva o projeto para continuar editando." wide onClose={closeDialog} footer={<><span className="modal-footnote">{(new Blob([exported.html]).size / 1024).toFixed(1)} KB de HTML · sem marca d’água</span><button className="button" onClick={async () => { try { await navigator.clipboard.writeText(exportedCode); notify('Código copiado.'); } catch { notify('Use o botão Baixar arquivo para exportar.'); } }}><Copy size={15}/>Copiar</button><button className="button primary" onClick={downloadExport}><Download size={15}/>Baixar arquivo</button></>}><div className="export-tabs">{(exported.project.mode === 'html' ? ['html', 'json'] as const : ['html', 'mjml', 'json'] as const).map(type => <button key={type} className={type === exportTab ? 'active' : ''} onClick={() => setExportTab(type)}>{type === 'json' ? 'Projeto JSON' : type.toUpperCase()}</button>)}</div>{exported.warnings.length > 0 && <details className="export-warnings" open><summary>{exported.warnings.length} pontos para revisar antes de enviar</summary><ul>{exported.warnings.map((warning, i) => <li key={i}>{warning}</li>)}</ul></details>}<textarea className="code-editor export-code" aria-label="Código exportado" value={exportedCode} readOnly spellCheck={false}/></Modal>}
+    {dialog === 'preview' && exported && <Modal title="Veja como ficou" subtitle={metadata.subject || 'Seu e-mail'} wide onClose={closeDialog} footer={<><span className="modal-footnote">As variáveis serão preenchidas pelo seu sistema de envio.</span><button className="button primary" onClick={closeDialog}>Continuar editando</button></>}><div className="preview-controls segmented"><button className={previewDevice === 'desktop' ? 'active' : ''} onClick={() => setPreviewDevice('desktop')}><Monitor size={16}/>Desktop</button><button className={previewDevice === 'mobile' ? 'active' : ''} onClick={() => setPreviewDevice('mobile')}><Smartphone size={16}/>Celular</button></div><div className="preview-surface"><EmailFrame title="Prévia do e-mail exportado" html={exported.html} className={previewDevice === 'mobile' ? 'preview-frame mobile' : 'preview-frame'}/></div></Modal>}
+    {dialog === 'import-html' && <Modal title="Importar e-mail em HTML" subtitle="Escolha um arquivo ou cole o código completo." wide onClose={closeDialog} footer={<><span className="modal-footnote">Até 2 MB · HTML fica editável por código</span><button className="button" onClick={closeDialog}>Cancelar</button><button className="button primary" onClick={applyHtmlImport}>Abrir HTML</button></>}><div className="html-import-actions"><button className="button" onClick={() => htmlFileInput.current?.click()}><Upload size={15}/>Escolher arquivo .html</button><input ref={htmlFileInput} hidden type="file" accept=".html,.htm,text/html" onChange={e => e.target.files?.[0] && readHtmlFile(e.target.files[0])}/><span>Tabelas, CSS e estrutura do e-mail</span></div><div className="notice">O documento será aberto no modo de código. Seu rascunho em blocos fica guardado separadamente. Scripts e formulários são removidos.</div><textarea className="code-editor" aria-label="HTML para importar" placeholder="<!doctype html>…" value={incomingHtml} maxLength={MAX_HTML_SIZE} spellCheck={false} onInput={e => setIncomingHtml(e.currentTarget.value)}/>{codeError && <p className="error-message" role="alert">{codeError}</p>}</Modal>}
     {dialog === 'template' && <Modal title={`Usar “${templates[pendingTemplate].name}”?`} subtitle="O modelo substituirá o e-mail aberto." onClose={closeDialog} footer={<><button className="button" onClick={projectDownload}><Download size={15}/>Baixar projeto atual</button><button className="button primary" onClick={applyTemplate}>Usar modelo</button></>}><p>Você pode baixar uma cópia do projeto atual antes de começar o novo modelo.</p></Modal>}
     {dialog === 'import' && <Modal title="Abrir projeto importado?" subtitle={pendingImport?.metadata.name} onClose={closeDialog} footer={<><button className="button" onClick={projectDownload}><Download size={15}/>Baixar projeto atual</button><button className="button primary" onClick={loadImport}>Abrir projeto</button></>}><p>O projeto importado substituirá o e-mail aberto. Salve uma cópia antes de continuar.</p></Modal>}
     {dialog === 'help' && <Modal title="Um espaço para suas boas ideias" subtitle="Conheça o seu editor em um minuto." onClose={closeDialog} footer={<button className="button primary" onClick={closeDialog}>Vamos criar</button>}><div className="help-list"><div><span>01</span><section><h3>Monte com blocos</h3><p>Arraste um bloco para a posição desejada, ou clique para inserir depois da seção selecionada. Reorganize pela alça do bloco ou pelas setas do painel.</p></section></div><div><span>02</span><section><h3>Edite do seu jeito</h3><p>Dê dois cliques no texto para escrever e formatar. Use o painel para fontes, cores, links e espaçamentos. “Editar HTML do bloco” abre o código.</p></section></div><div><span>03</span><section><h3>Leve com você</h3><p>Baixe o JSON para reabrir o projeto e exporte o HTML para o seu serviço de envio. A prévia mostra o HTML compilado em desktop e celular.</p></section></div></div><div className="notice">Esta demonstração salva neste navegador. Para o SaaS, conecte o salvamento e o upload de imagens pelos callbacks descritos na documentação. Faça um envio de teste no seu provedor antes de usar em campanhas reais.</div></Modal>}

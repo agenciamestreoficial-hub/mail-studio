@@ -1,6 +1,9 @@
+import { COUNTDOWN_PATH } from '../countdown/config';
+import { countdownAncestor, countdownBlock, countdownWarnings, isCountdown } from './countdown';
 import grapesjs, { type Component, type Editor } from 'grapesjs';
 import grapesJSMJMLImport from 'grapesjs-mjml';
 import { blockDefinitions, normalizeTemplate, section, templates, wrapMjml } from './templates';
+import { compileHtmlDocument, sanitizeEmailDocument } from './html-document';
 import { escapeXml, safeUrl, sanitizeEmailHtml } from './security';
 import type { EmailExport, EmailMetadata, EmailProject } from './types';
 
@@ -16,6 +19,8 @@ export const labels: Record<string, string> = {
 
 export function editableComponent(component?: Component): Component | undefined {
   if (!component) return;
+  const timer = countdownAncestor(component);
+  if (timer) return timer;
   if (labels[component.get('type') || '']) return component;
   return editableComponent(component.parent());
 }
@@ -28,7 +33,12 @@ export function sectionOf(component?: Component): Component | undefined {
 export function innerHtml(component: Component) {
   return (component.get('content') || '') + component.components().map((c: Component) => c.toHTML()).join('');
 }
-export function createEditor(container: HTMLElement, autorender = true): Editor {
+const countdownEndpoints = new WeakMap<Editor, string>();
+export function prepareBlock(editor: Editor, id: string) {
+  if (id === 'countdown') editor.Blocks.get(id).set('content', normalizeTemplate(countdownBlock(countdownEndpoints.get(editor))));
+}
+export function componentLabel(component: Component) { return isCountdown(component) ? 'Cronômetro' : labels[component.get('type') || ''] || 'Conteúdo'; }
+export function createEditor(container: HTMLElement, autorender = true, countdownEndpoint = COUNTDOWN_PATH): Editor {
   const editor = grapesjs.init({
     container, autorender, height: '100%', width: '100%', storageManager: false,
     noticeOnUnload: false, telemetry: false, fromElement: false,
@@ -52,6 +62,8 @@ export function createEditor(container: HTMLElement, autorender = true): Editor 
   // The plugin adds its own panels. The shell provides all controls instead.
   editor.Panels.getPanels().reset();
   blockDefinitions.forEach(block => editor.Blocks.add(block.id, { label: block.label, content: normalizeTemplate(block.content), category: block.category, select: true }));
+  countdownEndpoints.set(editor, countdownEndpoint);
+  prepareBlock(editor, 'countdown');
   const rte = editor.RichTextEditor;
   rte.remove('link');
   rte.add('link', {
@@ -82,20 +94,26 @@ export function createEditor(container: HTMLElement, autorender = true): Editor 
   return editor;
 }
 
-export function snapshot(editor: Editor, metadata: EmailMetadata): EmailProject {
-  return { schemaVersion: 1, metadata: { ...metadata }, design: editor.getProjectData(), updatedAt: new Date().toISOString() };
+export function snapshot(editor: Editor, metadata: EmailMetadata, htmlSource?: string, mode: 'visual' | 'html' = htmlSource === undefined ? 'visual' : 'html'): EmailProject {
+  return { schemaVersion: 1, metadata: { ...metadata }, design: editor.getProjectData(), updatedAt: new Date().toISOString(), ...(htmlSource === undefined ? {} : { mode, htmlSource }) };
 }
-export function exportEmail(editor: Editor, metadata: EmailMetadata): EmailExport {
+export function exportEmail(editor: Editor, metadata: EmailMetadata, htmlSource?: string, mode: 'visual' | 'html' = htmlSource === undefined ? 'visual' : 'html'): EmailExport {
+  if (mode === 'html') {
+    const source = sanitizeEmailDocument(htmlSource || '');
+    const { html, warnings } = compileHtmlDocument(source, metadata);
+    return { project: snapshot(editor, metadata, source), html, mjml: '', warnings };
+  }
   let mjml: string = editor.runCommand('mjml-code');
   const head = `<mj-title>${escapeXml(metadata.subject)}</mj-title><mj-preview>${escapeXml(metadata.preheader)}</mj-preview>`;
-  mjml = mjml.includes('<mj-head') ? mjml.replace(/(<mj-head[^>]*>)/, '$1' + head) : mjml.replace(/(<mjml[^>]*>)/, '$1<mj-head>' + head + '</mj-head>');
+  mjml = mjml.includes('<mj-head') ? mjml.replace(/(<mj-head[^>]*>)/, (_match: string, opening: string) => opening + head) : mjml.replace(/(<mjml[^>]*>)/, (_match: string, opening: string) => opening + '<mj-head>' + head + '</mj-head>');
   const result = editor.runCommand('mjml-code-to-html', { mjml, validationLevel: 'soft' });
   if (!result?.html) throw new Error('Não foi possível gerar o HTML. Revise a estrutura do e-mail.');
   const warnings: string[] = (result.errors || []).map((e: { message?: string; formattedMessage?: string }) => e.formattedMessage || e.message || 'Estrutura MJML inválida.');
+  warnings.push(...countdownWarnings(bodyOf(editor)?.findType('mj-section') || []));
   if (!metadata.subject.trim()) warnings.push('Preencha o assunto antes de enviar.');
   if (result.html.includes('https://example.com')) warnings.push('Substitua os links de exemplo pelo endereço da sua marca.');
   if (!result.html.includes('[UNSUBSCRIBE_URL]')) warnings.push('Inclua o link de descadastro exigido pelo seu provedor de envio.');
-  return { project: snapshot(editor, metadata), html: result.html, mjml, warnings };
+  return { project: snapshot(editor, metadata, htmlSource, mode), html: result.html, mjml, warnings };
 }
 export function insertBlock(editor: Editor, id: string) {
   const block = blockDefinitions.find(b => b.id === id);
@@ -103,7 +121,8 @@ export function insertBlock(editor: Editor, id: string) {
   if (!block || !body) return;
   const current = sectionOf(editor.getSelected());
   const index = current ? current.index() + 1 : body.components().length;
-  const added = body.append(normalizeTemplate(block.content), { at: index });
+  prepareBlock(editor, id);
+  const added = body.append(editor.Blocks.get(id).get('content') as string, { at: index });
   editor.select(added[0]);
   added[0].getEl()?.scrollIntoView({ block: 'center', behavior: 'smooth' });
 }
